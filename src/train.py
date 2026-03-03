@@ -4,6 +4,7 @@ from tensorflow import keras
 from tensorflow.keras import layers
 from vectorizer import Vectorizer
 
+
 class TextClassifier:
     def __init__(self, size_dim, size_classes):
         self.size_dim = size_dim
@@ -32,4 +33,12 @@ class TextClassifier:
 
     def train(self, x, y):
         y_vec = tf.keras.utils.to_categorical(y, num_classes=self.size_classes)
-        self.model.fit(x, y_vec, epochs=50, batch_size=2)
+        self.model.fit(x, y_vec, epochs=100, batch_size=2)
+
+
+if __name__ == "__main__":
+    vectorizer = Vectorizer()
+    x, y = vectorizer.get_data()
+    train = TextClassifier(128, 3)
+    train.train(x, y)
+    train.save_model()
