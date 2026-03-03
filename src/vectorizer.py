@@ -10,7 +10,7 @@ class Vectorizer:
     def __init__(self):
         self.train_data = self._load_data("train_data.json")
         self.texts = [self._preprocess_text(data["text"]) for data in self.train_data]
-        self.model = self._fit(self.texts, 100, 5, 1, 4, 1, 10)
+        self.model = self._fit(self.texts, 128, 5, 1, 4, 1, 10)
 
     def _load_data(self, filename: str) -> dict:
         base_path = Path(__file__).parent.parent
@@ -34,7 +34,7 @@ class Vectorizer:
             epochs=epochs
         )
 
-    def transform(self):
+    def _transform(self):
         average_vectors = []
         for token in self.texts:
             vector = [self.model.wv[word] for word in token if word in self.model.wv]
@@ -44,3 +44,10 @@ class Vectorizer:
                 average_vector = np.zeros(self.model.vector_size)
             average_vectors.append(average_vector)
         return np.array(average_vectors)
+
+    def get_data(self):
+        labels = [data["label"] for data in self.train_data]
+        x = self._transform()
+        y = np.array(labels)
+        return x, y
+
