@@ -1,14 +1,14 @@
 import json
-
-from vectorizer import Vectorizer
+from src.vectorizer import Vectorizer
 import tensorflow as tf
 import numpy as np
 from pathlib import Path
 import random
 
+
 class Predict:
     def __init__(self):
-        self.model = tf.keras.models.load_model('models/model.h5')
+        self.model = tf.keras.models.load_model('src/models/model.h5')
         self.vectorizer = Vectorizer()
 
     def _get_predict(self, text: str):
@@ -27,6 +27,3 @@ class Predict:
             data = json.load(file)[str(index)]
             return random.choice(data)
 
-
-p = Predict()
-print(p.give_advice("бухать каждый день"))
