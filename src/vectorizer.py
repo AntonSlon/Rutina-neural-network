@@ -8,11 +8,11 @@ import numpy as np
 
 class Vectorizer:
     def __init__(self):
-        self.train_data = self._load_data("train_data.json")
+        self.train_data = self.load_data("train_data.json")
         self.texts = [self.preprocess_text(data["text"]) for data in self.train_data]
-        self.model = self._fit(self.texts, 128, 5, 1, 4, 1, 10)
+        self.model = self.fit(self.texts, 128, 5, 1, 4, 1, 10)
 
-    def _load_data(self, filename: str) -> dict:
+    def load_data(self, filename: str) -> dict:
         base_path = Path(__file__).parent.parent
         full_path = base_path / "data" / filename
         with open(full_path, "r", encoding="utf-8") as file:
@@ -23,7 +23,7 @@ class Vectorizer:
         tokens = simple_preprocess(text, deacc=True)
         return tokens
 
-    def _fit(self, sentences: list, vector_size: int, window: int, min_count: int, workers: int, sg: int, epochs: int):
+    def fit(self, sentences: list, vector_size: int, window: int, min_count: int, workers: int, sg: int, epochs: int):
         return Word2Vec(
             sentences=sentences,
             vector_size=vector_size,
