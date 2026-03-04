@@ -33,7 +33,7 @@ class TextClassifier:
 
     def train(self, x, y):
         y_vec = tf.keras.utils.to_categorical(y, num_classes=self.size_classes)
-        self.model.fit(x, y_vec, epochs=100, batch_size=2)
+        self.model.fit(x, y_vec, epochs=5, batch_size=2)
 
 
 if __name__ == "__main__":
