@@ -1,7 +1,6 @@
-import json
 from fastapi import FastAPI, HTTPException
-from src.schemas.UserRequest import UserRequest
-from src.schemas.UserResponse import UserResponse
+from src.api.schemas.UserRequest import UserRequest
+from src.api.schemas.UserResponse import UserResponse
 from src.predict import Predict
 
 app = FastAPI(title="Rutina neural network service")
