@@ -7,9 +7,7 @@ from sklearn.model_selection import train_test_split
 import torch.nn.functional as F
 
 
-def get_classification_report(data, model_name, test_data_name):
-    X = torch.tensor(data['texts'], dtype=torch.float32)
-    y = torch.tensor(data['labels'], dtype=torch.long)
+def get_classification_report(model_name, test_data_name):
 
     path = Path(__file__).resolve().parent.parent.parent
     model_path = path / "model" / f"{model_name}"
@@ -31,7 +29,6 @@ def get_classification_report(data, model_name, test_data_name):
 
 if __name__ == "__main__":
     rubert = RuBERT()
-    data = rubert.load_vectors("ruBERT_vectors_25000_uncased.npz")
-    get_classification_report(data, "classifier_model1.pth", "test_model1.pth")
+    get_classification_report("classifier_model1.pth", "test_model1.pth")
 
 
