@@ -11,7 +11,7 @@ from src.train import Train
 class Predict:
     def __init__(self):
         self.ruBERT_model = RuBERT()
-        self.classifier = Train("model1").load_model("classifier_model1.pth")
+        self.classifier = Train("model2").load_model("classifier_model2.pth")
         self.classifier.eval()
         self.db = self.load_advices()
 
@@ -22,8 +22,7 @@ class Predict:
         vectorized = output.last_hidden_state[:, 0, :]
         return vectorized
 
-    def get_category(self, text):
-        input_vector = self._vectorize_text(text)
+    def get_category(self, input_vector):
         with torch.no_grad():
             prediction = self.classifier(input_vector)
             probs = F.softmax(prediction, dim=1)
@@ -32,7 +31,7 @@ class Predict:
 
     def give_advice(self, text):
         input_vector = self._vectorize_text(text)
-        category = str(self.get_category(text))
+        category = str(self.get_category(input_vector))
         category_vectors = self.db["vectors"][category]
         category_texts = self.db["texts"][category]
         similarities = F.cosine_similarity(input_vector, category_vectors)

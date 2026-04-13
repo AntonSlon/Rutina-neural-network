@@ -117,7 +117,7 @@ if __name__ == "__main__":
         "labels": vectors["labels"][test_idx]
     }
 
-    train = Train("model1")
+    train = Train("model2")
     train.fit(train_vectors, test_vectors, 10, 128)
 
     print(train.history)
