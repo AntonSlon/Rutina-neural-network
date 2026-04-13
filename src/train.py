@@ -99,7 +99,7 @@ class Train:
 
 if __name__ == "__main__":
     rubert = RuBERT()
-    vectors = rubert.load_vectors("ruBERT_vectors_25000_uncased.npz")
+    vectors = rubert.load_vectors("ruBERT_dataset.npz")
 
     train_idx, test_idx = train_test_split(
         range(len(vectors["texts"])),
@@ -117,7 +117,7 @@ if __name__ == "__main__":
         "labels": vectors["labels"][test_idx]
     }
 
-    train = Train("model2")
+    train = Train("model3")
     train.fit(train_vectors, test_vectors, 10, 128)
 
     print(train.history)

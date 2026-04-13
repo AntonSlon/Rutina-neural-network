@@ -48,6 +48,6 @@ class RuBERT:
 
 if __name__ == "__main__":
     rubert = RuBERT()
-    corpus = list(rubert.load_corpus("train_data_25000_new.jsonl"))
+    corpus = list(rubert.load_corpus("dataset.jsonl"))
     vec = rubert.vectorize(corpus)
-    rubert.save_vectors("ruBERT_vectors_25000_new", vec)
+    rubert.save_vectors("ruBERT_dataset", vec)

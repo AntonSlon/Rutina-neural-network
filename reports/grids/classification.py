@@ -36,4 +36,4 @@ def plot_grids(history_name):
 
 
 if __name__ == "__main__":
-    plot_grids("history_model2.json")
+    plot_grids("history_model3.json")

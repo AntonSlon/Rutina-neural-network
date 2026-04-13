@@ -11,11 +11,11 @@ from src.train import Train
 class Predict:
     def __init__(self):
         self.ruBERT_model = RuBERT()
-        self.classifier = Train("model2").load_model("classifier_model2.pth")
+        self.classifier = Train("model3").load_model("classifier_model3.pth")
         self.classifier.eval()
         self.db = self.load_advices()
 
-    def _vectorize_text(self, text):
+    def vectorize_text(self, text):
         tokenized = self.ruBERT_model.tokenize(text.lower())
         with torch.no_grad():
             output = self.ruBERT_model.model(**tokenized)
@@ -26,11 +26,12 @@ class Predict:
         with torch.no_grad():
             prediction = self.classifier(input_vector)
             probs = F.softmax(prediction, dim=1)
+            #print(probs)
             best_class = torch.argmax(probs, dim=1).item()
             return best_class
 
     def give_advice(self, text):
-        input_vector = self._vectorize_text(text)
+        input_vector = self.vectorize_text(text)
         category = str(self.get_category(input_vector))
         category_vectors = self.db["vectors"][category]
         category_texts = self.db["texts"][category]

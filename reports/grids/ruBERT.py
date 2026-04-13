@@ -8,7 +8,7 @@ from src.ruBERT import RuBERT  # Импортируем твой класс
 
 def plot_embeddings():
     rubert = RuBERT()
-    vectors = rubert.load_vectors("ruBERT_vectors_25000_new.npz")
+    vectors = rubert.load_vectors("ruBERT_dataset.npz")
 
     X = vectors["texts"]
     y = vectors["labels"]
