@@ -9,14 +9,15 @@ __pycache__/
 *.swp
 *.iml
 
-model/*.pth
-model/*.pt
-model/*.json
-model/*.npz
+models_cache/
 
-data/*.json
-data/*.jsonl
-data/*.csv
-data/*.npz
-!data/train_axample.jsonl
-!data/advices.json
+model/*
+!model/classifier_model3.pth
+!model/tips.pt
+
+data/*
+!data/tips.json
+!data/predict_eval_example.json
+!data/predict_eval_real_template.json
+!data/advices_example.json
+!data/train_example.jsonl

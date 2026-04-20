@@ -3,14 +3,21 @@ import torch
 import json
 from pathlib import Path
 from transformers import BertTokenizer, BertModel
-from tensorflow.keras.utils import to_categorical
 from torch.utils.data import TensorDataset
 
 
 class RuBERT:
     def __init__(self):
-        self._tokenizer = BertTokenizer.from_pretrained('DeepPavlov/rubert-base-cased', do_lower_case=True)
-        self.model = BertModel.from_pretrained('DeepPavlov/rubert-base-cased')
+        cache_dir = Path(__file__).resolve().parent.parent / "models_cache"
+        self._tokenizer = BertTokenizer.from_pretrained(
+            'DeepPavlov/rubert-base-cased',
+            do_lower_case=True,
+            cache_dir=str(cache_dir)
+        )
+        self.model = BertModel.from_pretrained(
+            'DeepPavlov/rubert-base-cased',
+            cache_dir=str(cache_dir)
+        )
         self.model.eval()
 
     def tokenize(self, text):
