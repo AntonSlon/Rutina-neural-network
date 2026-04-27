@@ -1,10 +1,13 @@
 from pathlib import Path
+
+import pymorphy3
 from sentence_transformers import CrossEncoder, SentenceTransformer, util
 import torch
 import torch.nn.functional as F
 import json
 from src.ruBERT import RuBERT
 from src.train import Train
+from rank_bm25 import BM25Okapi
 
 
 class Predict:
@@ -18,27 +21,25 @@ class Predict:
             self.RETRIEVAL_ENCODER_NAME,
             cache_folder=str(self.CACHE_DIR)
         )
-        self.db = self.load_advices("tips.pt")
+        self.db = self.load_advices("tips_ru.pt")
         self.cross_encoder = None
         self.ruBERT_model = None
         self.classifier = None
+        self.morph = pymorphy3.MorphAnalyzer()
 
         if load_predict_stack:
             self._ensure_predict_stack()
 
     def _ensure_predict_stack(self):
         if self.ruBERT_model is None:
-            print("Loading RuBERT model...")
             self.ruBERT_model = RuBERT()
 
         if self.classifier is None:
-            print("Loading classifier...")
             self.classifier = Train("model3").load_model("classifier_model3.pth")
             self.classifier.eval()
 
     def _ensure_cross_encoder(self):
         if self.cross_encoder is None:
-            print("Loading cross encoder...")
             self.cross_encoder = CrossEncoder(
                 self.CROSS_ENCODER_NAME,
                 cache_folder=str(self.CACHE_DIR)
@@ -71,68 +72,49 @@ class Predict:
         )
         return embedding.unsqueeze(0)
 
-    def predict_with_meta(self, input_text):
+    def tokenize_ru(self, text):
+        text = ''.join(char if char.isalpha() or char.isspace() or char.isdigit() else ' ' for char in text)
+        words = text.lower().split()
+        return [self.morph.parse(word)[0].normal_form for word in words if word]
+
+    def give_advice(self, input_text):
         input_text_lower = input_text.lower()
-        classifier_vector = self.vectorize_text(input_text_lower)
-        category = str(self.get_category(classifier_vector))
+        input_vector = self.vectorize_text(input_text_lower)
+        category = str(self.get_category(input_vector))
         category_vectors = self.db["vectors"][category]
         category_texts = self.db["texts"][category]
+        category_tokens = self.db["bm25_tokens"][category]
         retrieval_vector = self.embed_for_retrieval(input_text_lower)
 
         similarities = util.cos_sim(retrieval_vector, category_vectors).squeeze(0)
-        boosted_similarities = similarities.clone()
-        query_words = [word for word in input_text_lower.split() if len(word) >= 3]
-
-        for idx, advice_text in enumerate(category_texts):
-            advice_lower = advice_text.lower()
-            for word in query_words:
-                if word in advice_lower:
-                    boosted_similarities[idx] += 0.2
-                elif len(word) >= 4 and word[:4] in advice_lower:
-                    boosted_similarities[idx] += 0.1
-
-        top_k = min(50, len(category_texts))
-        _, indices = boosted_similarities.topk(top_k)
-        candidate_texts = [category_texts[idx] for idx in indices.tolist()]
-
-        self._ensure_cross_encoder()
-        pairs = [[input_text, text] for text in candidate_texts]
-        scores = self.cross_encoder.predict(pairs)
-
-        best_idx = scores.argmax()
-        best_text = candidate_texts[best_idx]
-
-        return {
-            "text": best_text,
-            "category": category,
-            "scores": scores,
-            "candidate_texts": candidate_texts,
-            "similarities": similarities[indices].tolist(),
-            "boosted_similarities": boosted_similarities[indices].tolist()
-        }
-
-    def give_advice(self, input_text):
-        result = self.predict_with_meta(input_text)
-        best_category = result["category"]
-        best_score = float(result["scores"][result["candidate_texts"].index(result["text"])])
-
-        return result["text"]
+        values, indices = similarities.topk(50)
+        top_indices = indices.tolist()
+        candidate_texts = [category_texts[idx] for idx in top_indices]
+        candidate_tokens = [category_tokens[idx] for idx in top_indices]
+        bm25 = BM25Okapi(candidate_tokens)
+        query_tokens = self.tokenize_ru(input_text)
+        scores = bm25.get_scores(query_tokens)
+        best_scores = {}
+        for i, score in enumerate(scores):
+            best_scores[i] = score
+        max_score = max(best_scores.items(), key=lambda item: item[1])[0]
+        return candidate_texts[max_score]
 
     def vectorize_and_save_advices(self, file_name, batch_size=32):
         file_path = Path(__file__).parent.parent / "data" / file_name
-        print(f"Loading advice file: {file_path}")
         with open(file_path, "r", encoding="utf-8") as f:
             advices = json.load(f)
 
         db = {
             "texts": {},
+            "bm25_tokens": {},
             "vectors": {},
             "encoder_name": self.RETRIEVAL_ENCODER_NAME
         }
 
         for category, sentences in advices.items():
-            print(f"Vectorizing category {category}: {len(sentences)} texts")
             db["texts"][category] = sentences
+            db["bm25_tokens"][category] = [self.tokenize_ru(sentence) for sentence in sentences]
             vectors = self.retrieval_encoder.encode(
                 [s.lower() for s in sentences],
                 batch_size=batch_size,
@@ -140,12 +122,9 @@ class Predict:
                 normalize_embeddings=True
             )
             db["vectors"][category] = vectors.cpu()
-            print(f"Category {category} done")
 
-        save_path = Path(__file__).parent.parent / "model" / "tips.pt"
-        print(f"Saving advice index to: {save_path}")
+        save_path = Path(__file__).parent.parent / "model" / "tips_ru.pt"
         torch.save(db, save_path)
-        print("Advice index saved")
 
     def load_advices(self, file_name):
         file_path = Path(__file__).parent.parent / "model" / file_name
