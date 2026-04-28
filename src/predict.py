@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import numpy as np
 import pymorphy3
 from sentence_transformers import CrossEncoder, SentenceTransformer, util
 import torch
@@ -59,7 +60,7 @@ class Predict:
             prediction = self.classifier(input_vector)
         if self.db is None:
             raise FileNotFoundError(
-                "Advice index not found. Run vectorize_and_save_advices first."
+                "Run vectorize_and_save_advices first"
             )
         probs = F.softmax(prediction, dim=1)
         return torch.argmax(probs, dim=1).item()
@@ -94,11 +95,25 @@ class Predict:
         bm25 = BM25Okapi(candidate_tokens)
         query_tokens = self.tokenize_ru(input_text)
         scores = bm25.get_scores(query_tokens)
-        best_scores = {}
-        for i, score in enumerate(scores):
-            best_scores[i] = score
-        max_score = max(best_scores.items(), key=lambda item: item[1])[0]
-        return candidate_texts[max_score]
+        if len(query_tokens) < 2:
+            best_scores = {}
+            for i, score in enumerate(scores):
+                best_scores[i] = score
+            max_score = max(best_scores.items(), key=lambda item: item[1])[0]
+            return candidate_texts[max_score]
+        else:
+            best_scores = []
+            for i, score in enumerate(scores):
+                best_scores.append((score, i))
+            best_scores.sort(reverse=True)
+            idx = [pair[1] for pair in best_scores][:25]
+            best_texts = [candidate_texts[i] for i in idx]
+
+            self._ensure_cross_encoder()
+            pairs = [[input_text, text] for text in best_texts]
+            scores = self.cross_encoder.predict(pairs)
+            best_idx = np.argmax(scores)
+            return best_texts[best_idx]
 
     def vectorize_and_save_advices(self, file_name, batch_size=32):
         file_path = Path(__file__).parent.parent / "data" / file_name
